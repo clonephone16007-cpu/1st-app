@@ -1,0 +1,22 @@
+export const quotes = [
+  "The pain you feel today will be the strength you feel tomorrow.",
+  "Success is the sum of small efforts, repeated day in and day out.",
+  "Don't stop when you're tired. Stop when you're done.",
+  "Wake up with determination. Go to bed with satisfaction.",
+  "It's going to be hard, but hard does not mean impossible.",
+  "Don't wait for opportunity. Create it.",
+  "Sometimes later becomes never. Do it now.",
+  "Great things never come from comfort zones.",
+  "Dream it. Wish it. Do it.",
+  "Success doesn't just find you. You have to go out and get it.",
+  "The harder you work for something, the greater you'll feel when you achieve it.",
+  "Dream bigger. Do bigger.",
+  "Don't stop until you're proud.",
+  "Push yourself, because no one else is going to do it for you.",
+  "Your only limit is you.",
+  "Work hard in silence, let your success be your noise.",
+  "If it doesn't challenge you, it won't change you.",
+  "Focus on your goal. Don't look in any direction but ahead.",
+  "A little progress each day adds up to big results.",
+  "Believe in yourself and all that you are."
+];
