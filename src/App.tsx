@@ -101,8 +101,9 @@ export default function App() {
           <Route path="notes" element={<ErrorBoundary><Notes /></ErrorBoundary>} />
           <Route path="advisor" element={<ErrorBoundary><Advisor /></ErrorBoundary>} />
           <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
-          </Routes>
-    <Analytics />
-  </BrowserRouter>
-);
+        </Route>
+      </Routes>
+      <Analytics />
+    </BrowserRouter>
+  );
 }
