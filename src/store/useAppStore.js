@@ -140,6 +140,10 @@ export const useAppStore = create(
       updateChapter: (id, data) => set((state) => {
         const isNowDone = data.done && (!state.chapters[id] || !state.chapters[id].done);
         const wasUndone = data.done === false && state.chapters[id]?.done;
+
+        // Track undo for BOTH marking done and unmarking — previously only wasUndone was tracked
+        const isDoneStateChanging = isNowDone || wasUndone;
+
         return {
           chapters: {
             ...state.chapters,
@@ -152,8 +156,8 @@ export const useAppStore = create(
           eqLog: isNowDone
             ? appendEq(state.eqLog, { type: 'chapter_completed', timestamp: Date.now(), chapterId: id })
             : state.eqLog,
-          // Track undone for undo
-          undoStack: wasUndone
+          // Now saves previous state whenever done-status changes in either direction
+          undoStack: isDoneStateChanging
             ? [...state.undoStack.slice(-4), { type: 'chapter_undone', data: { id, prevState: state.chapters[id] }, timestamp: Date.now() }]
             : state.undoStack,
         };
