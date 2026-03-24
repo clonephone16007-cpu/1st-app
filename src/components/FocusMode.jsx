@@ -23,7 +23,7 @@ const SUBJECT_COLORS = {
   General:   '#10B981',
 };
 
-export default function FocusMode({ isOpen, onClose, target, elapsed, currentSubject }) {
+export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, currentSubject }) {
   const { settings } = useAppStore();
   const { running, paused, pause, resume } = useTimerStore();
   const [quote, setQuote] = useState(QUOTES[0]);
@@ -31,6 +31,26 @@ export default function FocusMode({ isOpen, onClose, target, elapsed, currentSub
   const containerRef = useRef(null);
 
   useFocusTrap(containerRef, isOpen);
+
+  // Sync isFullscreen with actual browser fullscreen state
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  // Set/remove data-overlay on body so sidebar & nav hide via CSS
+  useEffect(() => {
+    if (isOpen) {
+      document.body.setAttribute('data-overlay', 'true');
+    } else {
+      document.body.removeAttribute('data-overlay');
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+    return () => document.body.removeAttribute('data-overlay');
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -67,18 +87,16 @@ export default function FocusMode({ isOpen, onClose, target, elapsed, currentSub
   const handleClose = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
-      setIsFullscreen(false);
     }
     onClose();
   };
 
+  // Fullscreen must be triggered directly from a user gesture click handler
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
     } else {
       document.exitFullscreen().catch(() => {});
-      setIsFullscreen(false);
     }
   };
 
@@ -160,7 +178,11 @@ export default function FocusMode({ isOpen, onClose, target, elapsed, currentSub
 
             {/* Giant Timer Ring */}
             <div className="relative flex items-center justify-center w-[400px] h-[400px]">
-              <svg className={`absolute inset-0 w-full h-full -rotate-90 ${running && !paused ? 'timer-glow-strong' : ''}`} viewBox="0 0 400 400">
+              <svg
+                className={`absolute inset-0 w-full h-full -rotate-90${running && !paused ? ' timer-glow-strong' : ''}`}
+                viewBox="0 0 400 400"
+                style={{ '--glow-color': accentColor }}
+              >
                 <circle cx="200" cy="200" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
                 <circle
                   cx="200" cy="200" r={radius} fill="none"
@@ -169,14 +191,12 @@ export default function FocusMode({ isOpen, onClose, target, elapsed, currentSub
                   strokeDasharray={circumference}
                   strokeDashoffset={dashoffset}
                   strokeLinecap="round"
-                  className="transition-all duration-1000 linear"
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
                 />
               </svg>
-              
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.25, type: 'spring', stiffness: 200 }}
+
+              {/* Plain div — no motion wrapper to avoid per-tick re-animation flicker */}
+              <div
                 className="absolute font-mono font-bold tracking-tighter tabular-nums z-10"
                 style={{
                   fontSize: '5.5rem',
@@ -186,7 +206,7 @@ export default function FocusMode({ isOpen, onClose, target, elapsed, currentSub
                 }}
               >
                 {formatTime(displayTime)}
-              </motion.div>
+              </div>
             </div>
 
             {/* Pause/Resume button */}

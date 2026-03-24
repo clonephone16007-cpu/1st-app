@@ -88,6 +88,12 @@ body {
   transition: background-color 300ms var(--motion-ease), color 300ms var(--motion-ease);
 }
 
+/* ─── Overlay: hide sidebar & bottom nav when a fullscreen overlay is active ─── */
+body[data-overlay='true'] .sidebar-hide,
+body[data-overlay='true'] nav {
+  display: none !important;
+}
+
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -153,8 +159,8 @@ button, a, [role="button"] {
   50%       { opacity: 0.5; }
 }
 @keyframes timerGlow {
-  0%, 100% { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 35%, transparent)); }
-  50%      { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  0%, 100% { filter: drop-shadow(0 0 4px var(--glow-color, var(--accent))); }
+  50%      { filter: drop-shadow(0 0 18px var(--glow-color, var(--accent))); }
 }
 @keyframes shimmer {
   from { background-position: -200% 0; }
@@ -165,7 +171,18 @@ button, a, [role="button"] {
 .animate-slide-up    { animation: slideUp 220ms var(--motion-ease) both; }
 .animate-fade-in-up  { animation: fadeInUp 280ms var(--motion-ease) both; }
 .animate-scale-in    { animation: scaleIn 180ms var(--motion-ease) both; }
-.timer-glow          { animation: timerGlow 2s ease-in-out infinite; }
+
+/* ─── Timer Glow classes ─── */
+.timer-glow {
+  animation: timerGlow 2s ease-in-out infinite;
+  will-change: filter;
+}
+/* Active-running glow — stronger pulsing variant, color driven by --glow-color CSS var */
+.timer-glow-strong {
+  animation: timerGlow 1.5s ease-in-out infinite;
+  will-change: filter;
+  filter: drop-shadow(0 0 12px var(--glow-color, #10B981));
+}
 
 /* Page transition */
 @keyframes pageFadeIn {
@@ -184,7 +201,6 @@ button, a, [role="button"] {
 .stagger > * {
   animation: staggerIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
-/* Stagger children */
 .stagger > *:nth-child(1) { animation-delay: 0ms; }
 .stagger > *:nth-child(2) { animation-delay: 40ms; }
 .stagger > *:nth-child(3) { animation-delay: 80ms; }
@@ -201,7 +217,6 @@ button, a, [role="button"] {
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--radius-md);
 }
-
 
 /* ─── Nav links ─── */
 .nav-item {
@@ -266,6 +281,10 @@ input:focus, textarea:focus, select:focus {
   .flashcard-flip-inner {
     transition: none;
   }
+  .timer-glow, .timer-glow-strong {
+    animation: none;
+    filter: none;
+  }
 }
 
 /* ─── Print stylesheet ─── */
@@ -274,7 +293,7 @@ input:focus, textarea:focus, select:focus {
     background: white !important;
     color: black !important;
   }
-  nav, .sidebar, .bottom-nav, button, .no-print,
+  nav, .sidebar, .sidebar-hide, .bottom-nav, button, .no-print,
   [role="navigation"], .fixed {
     display: none !important;
   }

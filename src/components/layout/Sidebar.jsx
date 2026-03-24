@@ -34,8 +34,10 @@ export default function Sidebar({ onOpenPanic, onOpenCommand }) {
   const targetHours = settings.dailyTargetHours || 8;
 
   return (
-    <aside className="hidden md:flex flex-col w-60 h-screen flex-shrink-0"
-      style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-light)' }}>
+    <aside
+      className="sidebar-hide hidden md:flex flex-col w-60 h-screen flex-shrink-0"
+      style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-light)' }}
+    >
 
       {/* Brand */}
       <button

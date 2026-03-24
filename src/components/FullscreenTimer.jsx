@@ -13,31 +13,37 @@ function fmt(secs) {
   return `${m}:${s}`;
 }
 
-export default function FullscreenTimer({ isOpen, running, paused, elapsed, target, subject, mode, onPause, onResume, onStop, onClose }) {
+export default function FullscreenTimer({ isOpen, running, paused, elapsed, target, subject, mode, onPause, onResume, onStop, onClose, onOpen }) {
   const color = SUBJECT_COLORS[subject] || 'var(--accent)';
   const displaySecs = mode === 'free' ? elapsed : Math.max(0, target - elapsed);
   const progress = target > 0 ? Math.min(1, elapsed / target) : elapsed / 3600;
   const radius = 120;
   const circ = 2 * Math.PI * radius;
-  
+
   const containerRef = useRef(null);
   useFocusTrap(containerRef, isOpen);
 
-  // Escape key exits
+  // Keyboard shortcuts
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (e) => { if (e.key === 'Escape') onClose(); if (e.key === ' ') { e.preventDefault(); paused ? onResume() : onPause(); } };
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === ' ') { e.preventDefault(); paused ? onResume() : onPause(); }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, paused, onPause, onResume, onClose]);
 
-  // Enter browser fullscreen on open, exit on close
+  // Set/remove data-overlay on body so sidebar & nav hide via CSS
+  // requestFullscreen is NOT called here — it must come from a direct user-gesture (onOpen prop)
   useEffect(() => {
     if (isOpen) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
+      document.body.setAttribute('data-overlay', 'true');
     } else {
+      document.body.removeAttribute('data-overlay');
       if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     }
+    return () => document.body.removeAttribute('data-overlay');
   }, [isOpen]);
 
   return (
@@ -60,7 +66,11 @@ export default function FullscreenTimer({ isOpen, running, paused, elapsed, targ
 
           {/* Ring */}
           <div className="relative" style={{ width: 300, height: 300 }}>
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
+            <svg
+              className="w-full h-full -rotate-90"
+              viewBox="0 0 280 280"
+              style={{ '--glow-color': color }}
+            >
               <defs>
                 <filter id="fs-glow">
                   <feGaussianBlur stdDeviation="4" result="blur"/>
