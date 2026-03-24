@@ -19,8 +19,9 @@ import Settings from './pages/Settings';
 
 const DARK_THEMES = ['dark', 'dark-minimal', 'ocean', 'forest', 'high-contrast'];
 
-function isDarkTheme(theme) {
-  return theme === 'dark' || theme === 'dark-minimal';
+// Fix: previously only checked 'dark' and 'dark-minimal', missing ocean/forest/high-contrast
+function isDarkTheme(theme: string) {
+  return DARK_THEMES.includes(theme);
 }
 
 export default function App() {
