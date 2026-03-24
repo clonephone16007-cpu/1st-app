@@ -5,6 +5,7 @@ import { useDailyReset } from './hooks/useDailyReset';
 import Layout from './components/layout/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from 'sonner';
+import { Analytics } from '@vercel/analytics/react';
 
 import Dashboard from './pages/Dashboard';
 import Timer from './pages/Timer';
@@ -100,8 +101,8 @@ export default function App() {
           <Route path="notes" element={<ErrorBoundary><Notes /></ErrorBoundary>} />
           <Route path="advisor" element={<ErrorBoundary><Advisor /></ErrorBoundary>} />
           <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  );
+          </Routes>
+    <Analytics />
+  </BrowserRouter>
+);
 }
