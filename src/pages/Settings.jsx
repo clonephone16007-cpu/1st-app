@@ -130,10 +130,13 @@ export default function Settings() {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      try { 
-        useAppStore.setState(JSON.parse(ev.target.result)); 
-        toast.success('Data imported successfully!'); 
-        setTimeout(() => window.location.reload(), 1000); 
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        // Fix: use validated importData() action instead of raw setState
+        // importData() type-checks every field before accepting it
+        useAppStore.getState().importData(parsed);
+        toast.success('Data imported successfully!');
+        setTimeout(() => window.location.reload(), 1000);
       }
       catch { toast.error('Invalid backup file. Import failed.'); }
     };
@@ -142,9 +145,11 @@ export default function Settings() {
 
   const handleSelectiveClear = (type) => {
     if (window.confirm(`Are you sure you want to delete all ${type}? This cannot be undone.`)) {
-      if (type === 'sessions') useAppStore.setState({ sessions: [] });
-      if (type === 'flashcards') useAppStore.setState({ flashcards: [] });
-      if (type === 'scores') useAppStore.setState({ scores: {} });
+      // Fix: use dedicated store actions instead of raw setState
+      // ensures future middleware/logging triggers correctly
+      if (type === 'sessions') useAppStore.getState().clearSessions();
+      if (type === 'flashcards') useAppStore.getState().clearFlashcards();
+      if (type === 'scores') useAppStore.getState().clearScores();
       toast.success(`All ${type} have been deleted.`);
     }
   };
