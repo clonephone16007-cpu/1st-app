@@ -31,8 +31,6 @@ const SUBJECT_COLORS = {
   General:   'var(--accent)',
 };
 
-
-// Session quality: duration × subject knapsack density × BKT signal
 function sessionQuality(session, dailyPlan) {
   const mins = session.mins || 0;
   const planEntry = (dailyPlan || []).find(p => p.subject === session.subject);
@@ -45,7 +43,6 @@ export default function Timer() {
   const { running, paused, elapsed, target, mode, subject, start, pause, resume, stop, setMode, setSubject, tick } =
     useTimerStore();
 
-  // FIX: merged two separate useAppStore() calls into one
   const { sessions, addSession, updateSession, deleteSession, settings, scores, chapters } = useAppStore();
 
   const ec = useEngineContext();
@@ -57,7 +54,6 @@ export default function Timer() {
   const [pendingSessionId, setPendingSessionId] = useState(null);
   const [debriefAnswers, setDebriefAnswers] = useState({ clarity: null, practice: null, energy: null, confidence: 0 });
 
-  // Thompson Sampling subject suggestion (from engine context)
   const suggestedSubject = ec.suggestedSubject;
 
   const [showFocusMode, setShowFocusMode] = useState(false);
@@ -109,6 +105,7 @@ export default function Timer() {
     }
   };
 
+  // setInterval still fires every second; tick() now uses wall-clock so catching up after bg tab is automatic
   useEffect(() => {
     let interval;
     if (running && !paused) {
@@ -175,7 +172,6 @@ export default function Timer() {
     setPendingSessionId(null);
   };
 
-  // FIX: handleSaveAndStop is now in the dep array — no more stale closure
   useEffect(() => {
     if (running && target > 0 && elapsed >= target) {
       playBeep();
@@ -226,15 +222,16 @@ export default function Timer() {
   });
 
   const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
+    const safe = Math.max(0, Math.floor(Number(secs) || 0));
+    const m = Math.floor(safe / 60).toString().padStart(2, '0');
+    const s = (safe % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
   const radius = 90;
   const stroke = 10;
   const circumference = 2 * Math.PI * radius;
-  let dashoffset = circumference; // empty by default
+  let dashoffset = circumference;
   if (running || paused) {
     if (target > 0) {
       dashoffset = circumference * (1 - Math.min(1, elapsed / target));
@@ -271,7 +268,7 @@ export default function Timer() {
       case 'clicked': return '#22c55e';
       case 'confused': return '#f59e0b';
       case 'struggling': return '#ef4444';
-      default: return 'var(--text-muted)'; // okay or null/skipped
+      default: return 'var(--text-muted)';
     }
   };
 
@@ -279,11 +276,11 @@ export default function Timer() {
     <>
     <div className="max-w-4xl mx-auto space-y-6 pb-8">
 
+      {/* FocusMode: no longer needs target/elapsed props — reads from store directly */}
       {showFocusMode && (
         <FocusMode
           isOpen={showFocusMode}
           onClose={() => setShowFocusMode(false)}
-          timer={target > 0 ? target - elapsed : elapsed}
           currentSubject={subject}
         />
       )}
