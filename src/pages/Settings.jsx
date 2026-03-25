@@ -59,6 +59,7 @@ export default function Settings() {
   const { tuneSetting } = useAI();
   const ec = useEngineContext();
   const [copied, setCopied] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const fileInputRef = useRef(null);
   const patchInputRef = useRef(null);
 
@@ -132,8 +133,6 @@ export default function Settings() {
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target.result);
-        // Fix: use validated importData() action instead of raw setState
-        // importData() type-checks every field before accepting it
         useAppStore.getState().importData(parsed);
         toast.success('Data imported successfully!');
         setTimeout(() => window.location.reload(), 1000);
@@ -145,8 +144,6 @@ export default function Settings() {
 
   const handleSelectiveClear = (type) => {
     if (window.confirm(`Are you sure you want to delete all ${type}? This cannot be undone.`)) {
-      // Fix: use dedicated store actions instead of raw setState
-      // ensures future middleware/logging triggers correctly
       if (type === 'sessions') useAppStore.getState().clearSessions();
       if (type === 'flashcards') useAppStore.getState().clearFlashcards();
       if (type === 'scores') useAppStore.getState().clearScores();
@@ -197,6 +194,29 @@ export default function Settings() {
     toast.success('Tuning prompt copied to clipboard!');
   };
 
+  // ── Verify API Key ─────────────────────────────────────────────────────────
+  // Uses the updated testApiKey which returns { ok, message } — never a plain boolean
+  const handleVerifyKey = async () => {
+    if (!settings.geminiApiKey?.trim()) {
+      toast.error('Enter your API key first.');
+      return;
+    }
+    setVerifying(true);
+    try {
+      const { testApiKey } = await import('../services/aiService');
+      const result = await testApiKey(settings.geminiApiKey, settings.aiProvider || 'gemini');
+      if (result?.ok) {
+        toast.success(result.message || 'API key verified. AI features are active.');
+      } else {
+        toast.error(result?.message || 'Verification failed. Check your key and try again.');
+      }
+    } catch (e) {
+      toast.error('Unexpected error during verification. Try again.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const getStorageUsage = () => {
     try {
       let total = 0;
@@ -205,7 +225,6 @@ export default function Settings() {
     } catch { return '0.0'; }
   };
 
-  // Sticky navigation array
   const sections = [
     { id: 'appearance', label: 'Appearance' },
     { id: 'exams', label: 'Exams' },
@@ -397,19 +416,17 @@ export default function Settings() {
                 <div className="relative flex-1">
                   <input type="password" value={settings.geminiApiKey || ''}
                     onChange={e => updateSettings({ geminiApiKey: e.target.value })}
-                    placeholder={settings.aiProvider === "openai" ? "sk-proj-..." : settings.aiProvider === "sarvam" ? "sarvam-..." : "AIza..."} 
+                    placeholder={settings.aiProvider === "openai" ? "sk-proj-..." : settings.aiProvider === "sarvam" ? "sarvam-..." : "AIza..."}  
                     className="w-full px-4 py-2.5 rounded-xl text-sm font-mono focus:outline-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
                     style={{ background: 'var(--bg-sidebar)', border: '1px solid var(--border-medium)', color: 'var(--text)' }}/>
                 </div>
-                <button onClick={async () => {
-                    const { testApiKey } = await import('../services/aiService');
-                    const ok = await testApiKey(settings.geminiApiKey || '', settings.aiProvider || 'gemini');
-                    if (ok) toast.success('API Key validated successfully. Features unlocked.');
-                    else toast.error('API Verification failed. Ensure key is valid and has billing enabled.');
-                  }}
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 shadow-sm active:translate-y-0"
+                {/* ── Fixed Verify button: uses {ok, message} from testApiKey ── */}
+                <button
+                  onClick={handleVerifyKey}
+                  disabled={verifying}
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 shadow-sm active:translate-y-0 disabled:opacity-60 disabled:cursor-wait"
                   style={{ background: 'var(--text)', color: 'var(--bg-card)' }}>
-                  Verify Setup
+                  {verifying ? 'Verifying…' : 'Verify Setup'}
                 </button>
               </div>
               {settings.geminiApiKey && <p className="text-xs font-semibold mt-3" style={{ color: '#22c55e' }}>✨ Machine Intelligence Active: Advisor, Planner & Tutors are online.</p>}
