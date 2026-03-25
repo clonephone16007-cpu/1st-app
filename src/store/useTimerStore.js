@@ -10,7 +10,9 @@ export const useTimerStore = create(
       target: 0,
       mode: 'focus',
       subject: 'Math',
-      startedAt: null, // timestamp when timer was started — used to recover on refresh
+      startedAt: null,      // wall-clock ms when timer last (re)started
+      pausedAt: null,       // wall-clock ms when paused
+      pausedDuration: 0,    // total ms spent paused so far
 
       start: (target, mode, subject) => set({
         running: true,
@@ -20,28 +22,57 @@ export const useTimerStore = create(
         mode,
         subject,
         startedAt: Date.now(),
-      }),
-      pause: () => set({ paused: true }),
-      resume: () => set({ paused: false }),
-      stop: () => set({ running: false, paused: false, elapsed: 0, startedAt: null }),
-      setMode: (mode) => set({ mode }),
-      setSubject: (subject) => set({ subject }),
-      tick: () => set((state) => {
-        if (state.running && !state.paused) {
-          return { elapsed: state.elapsed + 1 };
-        }
-        return state;
+        pausedAt: null,
+        pausedDuration: 0,
       }),
 
-      // On rehydration: if we were running, compute elapsed from startedAt
+      pause: () => set((state) => ({
+        paused: true,
+        pausedAt: Date.now(),
+        // snapshot elapsed so resume can offset correctly
+        elapsed: state.startedAt
+          ? Math.floor((Date.now() - state.startedAt - (state.pausedDuration || 0)) / 1000)
+          : state.elapsed,
+      })),
+
+      resume: () => set((state) => {
+        const additionalPause = state.pausedAt ? Date.now() - state.pausedAt : 0;
+        return {
+          paused: false,
+          pausedAt: null,
+          pausedDuration: (state.pausedDuration || 0) + additionalPause,
+        };
+      }),
+
+      stop: () => set({
+        running: false,
+        paused: false,
+        elapsed: 0,
+        startedAt: null,
+        pausedAt: null,
+        pausedDuration: 0,
+      }),
+
+      setMode: (mode) => set({ mode }),
+      setSubject: (subject) => set({ subject }),
+
+      // Called every second by setInterval — uses wall clock so background tabs auto-catch-up
+      tick: () => set((state) => {
+        if (!state.running || state.paused || !state.startedAt) return state;
+        const elapsed = Math.floor((Date.now() - state.startedAt - (state.pausedDuration || 0)) / 1000);
+        return { elapsed: Math.max(0, elapsed) };
+      }),
+
+      // On rehydration after page refresh
       rehydrate: () => set((state) => {
         if (state.running && state.startedAt) {
-          const secondsSinceStart = Math.floor((Date.now() - state.startedAt) / 1000);
-          // If target was set and we've exceeded it, cap at target
+          const secondsSinceStart = Math.floor(
+            (Date.now() - state.startedAt - (state.pausedDuration || 0)) / 1000
+          );
           const newElapsed = state.target > 0
             ? Math.min(secondsSinceStart, state.target)
             : secondsSinceStart;
-          return { elapsed: newElapsed, paused: true }; // Auto-pause on refresh
+          return { elapsed: newElapsed, paused: true, pausedAt: Date.now() };
         }
         return state;
       }),
@@ -56,6 +87,8 @@ export const useTimerStore = create(
         mode: state.mode,
         subject: state.subject,
         startedAt: state.startedAt,
+        pausedAt: state.pausedAt,
+        pausedDuration: state.pausedDuration,
       }),
     }
   )
