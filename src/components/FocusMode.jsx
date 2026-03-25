@@ -23,9 +23,10 @@ const SUBJECT_COLORS = {
   General:   '#10B981',
 };
 
-export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, currentSubject }) {
+export default function FocusMode({ isOpen, onClose, currentSubject }) {
   const { settings } = useAppStore();
-  const { running, paused, pause, resume } = useTimerStore();
+  // Read timer state DIRECTLY from store — no more prop drilling of target/elapsed
+  const { running, paused, elapsed, target, pause, resume } = useTimerStore();
   const [quote, setQuote] = useState(QUOTES[0]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
@@ -91,7 +92,6 @@ export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, cu
     onClose();
   };
 
-  // Fullscreen must be triggered directly from a user gesture click handler
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -101,9 +101,10 @@ export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, cu
   };
 
   const formatTime = (seconds) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
+    const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const h = Math.floor(safeSeconds / 3600);
+    const m = Math.floor((safeSeconds % 3600) / 60);
+    const s = safeSeconds % 60;
     if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   };
@@ -121,7 +122,10 @@ export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, cu
   }
 
   const accentColor = SUBJECT_COLORS[currentSubject] || '#10B981';
-  const displayTime = running || paused ? (target > 0 ? target - elapsed : elapsed) : 0;
+  // Safe display time calculation
+  const displayTime = (running || paused)
+    ? (target > 0 ? Math.max(0, target - elapsed) : elapsed)
+    : 0;
 
   return (
     <AnimatePresence>
@@ -174,6 +178,11 @@ export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, cu
                   PAUSED
                 </span>
               )}
+              {!running && !paused && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(100,100,100,0.3)', color: 'rgba(255,255,255,0.5)' }}>
+                  NOT STARTED
+                </span>
+              )}
             </motion.div>
 
             {/* Giant Timer Ring */}
@@ -195,7 +204,6 @@ export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, cu
                 />
               </svg>
 
-              {/* Plain div — no motion wrapper to avoid per-tick re-animation flicker */}
               <div
                 className="absolute font-mono font-bold tracking-tighter tabular-nums z-10"
                 style={{
@@ -232,6 +240,13 @@ export default function FocusMode({ isOpen, onClose, onOpen, target, elapsed, cu
                   {paused ? 'Resume Session' : 'Pause Session'}
                 </button>
               </motion.div>
+            )}
+
+            {/* If timer not started yet */}
+            {!running && !paused && (
+              <p className="mt-12 text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                Start a timer session first, then enter Focus Mode.
+              </p>
             )}
           </div>
 
