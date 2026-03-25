@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTimerStore } from '../store/useTimerStore';
 import { useAppStore } from '../store/useAppStore';
 import FocusMode from '../components/FocusMode';
@@ -276,13 +277,23 @@ export default function Timer() {
     <>
     <div className="max-w-4xl mx-auto space-y-6 pb-8">
 
+<<<<<<< Updated upstream
       {/* FocusMode: no longer needs target/elapsed props — reads from store directly */}
       {showFocusMode && (
         <FocusMode
           isOpen={showFocusMode}
           onClose={() => setShowFocusMode(false)}
+=======
+      {showFocusMode && createPortal(
+        <FocusMode
+          isOpen={showFocusMode}
+          onClose={() => setShowFocusMode(false)}
+          target={target}
+          elapsed={elapsed}
+>>>>>>> Stashed changes
           currentSubject={subject}
-        />
+        />,
+        document.body
       )}
 
       {/* Header */}
